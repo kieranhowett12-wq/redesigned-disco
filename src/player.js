@@ -92,13 +92,8 @@ class Player {
     }
 
     // movement input
-    let mx = 0, my = 0;
-    if (Input.down('up')) my -= 1;
-    if (Input.down('down')) my += 1;
-    if (Input.down('left')) mx -= 1;
-    if (Input.down('right')) mx += 1;
-    const ml = Math.hypot(mx, my);
-    if (ml) { mx /= ml; my /= ml; }
+    const mv = Input.moveVector();
+    const mx = mv.x, my = mv.y, ml = Math.hypot(mx, my);
 
     // input buffer (~0.25 s)
     for (const a of ['light', 'heavy', 'dodge', 'parry', 'heal']) {

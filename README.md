@@ -22,6 +22,15 @@ Open `index.html` in a browser. It has no build step and no dependencies.
 | E | Interact (shrines, chests, stairs) |
 | Esc / P | Pause |
 
+### Touch (phones / tablets)
+
+Touch controls appear automatically. Landscape works best.
+
+- **Left thumb:** drag anywhere on the left half of the screen to move (an analog stick).
+- **Right thumb:** ATTACK, HEAVY, ROLL, PARRY and FLASK buttons. Tap ROLL to dodge; hold it to run.
+- **Aiming:** your attacks lock onto the nearest enemy you can see. With nothing in range, you face the way you move.
+- A **USE** button appears next to chests, shrines and stairs. **II** at the top pauses. In menus, tap an option to pick it.
+
 ## Combat
 
 - **Stamina** powers every attack, roll and parry. When it runs out you can't act.
@@ -46,6 +55,7 @@ Open `index.html` in a browser. It has no build step and no dependencies.
 index.html        canvas + script tags (load order matters)
 src/util.js       math, seeded RNG, colour helpers
 src/input.js      keyboard/mouse bindings, per-step "pressed" edges
+src/touch.js      on-screen joystick + buttons, touch aim assist
 src/audio.js      synthesized WebAudio SFX
 src/fx.js         particles, damage numbers, decals, shake, hit-stop
 src/floors.js     THE TOWER: one config object per floor

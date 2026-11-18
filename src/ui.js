@@ -79,7 +79,7 @@ function renderHUD(game, ctx) {
     if (full) { ctx.fillStyle = '#ffd27a'; ctx.fillRect(fx + 4, fy + 9, 3, 6); }
   }
   ctx.fillStyle = '#d8c8a8'; ctx.font = `11px ${FONT}`;
-  ctx.fillText('[R]', x + p.maxFlasks * 22 + 4, y + 58);
+  if (!Touch.active) ctx.fillText('[R]', x + p.maxFlasks * 22 + 4, y + 58);
 
   // relics
   run.relics.forEach((id, i) => {
@@ -90,15 +90,18 @@ function renderHUD(game, ctx) {
     ctx.fillStyle = r.color; ctx.fillRect(-6, -6, 12, 12);
     ctx.restore();
   });
-  if (p.vengeanceReady) { ctx.fillStyle = '#ff6060'; ctx.fillText('Grudge ready', x, y + 104); }
+  if (p.vengeanceReady) { ctx.fillStyle = '#ff6060'; ctx.fillText('Grudge ready', x + (Touch.active ? 120 : 0), y + 104); }
 
   // embers / level
-  ctx.textAlign = 'right';
+  // touch: buttons own the bottom-right corner, so embers move under the flasks
+  const tch = Touch.active;
+  const ex = tch ? x : VW - 24, ey = tch ? y + (run.relics.length ? 128 : 104) : VH - 26;
+  ctx.textAlign = tch ? 'left' : 'right';
   ctx.font = `bold 20px ${FONT}`;
-  ctx.fillStyle = '#000'; ctx.fillText(`${Math.floor(run.embers)}`, VW - 27, VH - 25);
-  ctx.fillStyle = '#ffc875'; ctx.fillText(`${Math.floor(run.embers)}`, VW - 28, VH - 26);
+  ctx.fillStyle = '#000'; ctx.fillText(`${Math.floor(run.embers)}`, ex + 1, ey + 1);
+  ctx.fillStyle = '#ffc875'; ctx.fillText(`${Math.floor(run.embers)}`, ex, ey);
   ctx.font = `12px ${FONT}`; ctx.fillStyle = '#b8a890';
-  ctx.fillText(`embers  ·  level ${run.level}`, VW - 28, VH - 48);
+  ctx.fillText(`embers  ·  level ${run.level}`, ex, ey - 22);
 
   // minimap
   const mm = game.minimap, ms = Math.min(170, 170);
@@ -125,7 +128,8 @@ function renderHUD(game, ctx) {
   // boss bar
   const b = game.bossActive;
   if (b) {
-    const bw = Math.min(680, VW - 120), bx = (VW - bw) / 2, by = VH - 56;
+    const side = Touch.active ? 270 * Touch.s / game.ui : 60;
+    const bw = Math.max(200, Math.min(680, VW - side * 2)), bx = (VW - bw) / 2, by = VH - 56;
     ctx.textAlign = 'left'; ctx.font = `15px ${FONT}`; ctx.fillStyle = '#e8dcc8';
     ctx.fillText(b.def.name, bx, by - 10);
     bar(ctx, bx, by, bw, 12, b.hp / b.maxHp, b.phase === 2 ? '#7a2a9a' : '#8a1a22', b.hpShown / b.maxHp);
@@ -162,9 +166,16 @@ function renderHUD(game, ctx) {
   // first-floor control hint
   if (run.floor === 0 && run.time < 20 && game.state === 'play') {
     ctx.globalAlpha = clamp((20 - run.time) / 3, 0, 1) * 0.85;
-    ctx.textAlign = 'left'; ctx.font = `12px ${FONT}`; ctx.fillStyle = '#c8b898';
-    const lines = ['WASD move · Mouse aim · Shift sprint', 'LMB light (combo) · RMB heavy', 'Space roll (i-frames) · Q parry · R flask · E interact'];
-    lines.forEach((l, i) => ctx.fillText(l, 28, VH - 64 + i * 18));
+    ctx.font = `12px ${FONT}`; ctx.fillStyle = '#c8b898';
+    if (Touch.active) {
+      ctx.textAlign = 'center';
+      const lines = ['Drag on the left to move · aim locks on automatically', 'Tap ROLL to dodge, hold it to run · tap ATTACK to combo'];
+      lines.forEach((l, i) => ctx.fillText(l, VW / 2, VH * 0.62 + i * 18));
+    } else {
+      ctx.textAlign = 'left';
+      const lines = ['WASD move · Mouse aim · Shift sprint', 'LMB light (combo) · RMB heavy', 'Space roll (i-frames) · Q parry · R flask · E interact'];
+      lines.forEach((l, i) => ctx.fillText(l, 28, VH - 64 + i * 18));
+    }
     ctx.globalAlpha = 1;
   }
 }
@@ -423,11 +434,16 @@ function renderTitle(game, ctx) {
   const blink = 0.6 + 0.4 * Math.sin(game.time * 3);
   ctx.globalAlpha = blink;
   ctx.font = `${Math.round(20 * s)}px ${FONT}`; ctx.fillStyle = '#ffc875';
-  ctx.fillText('Press Enter or click to begin the climb', W / 2, H * 0.62);
+  ctx.fillText(Touch.active ? 'Tap to begin the climb' : 'Press Enter or click to begin the climb', W / 2, H * 0.62);
   ctx.globalAlpha = 1;
 
   ctx.font = `${Math.round(13 * s)}px ${FONT}`; ctx.fillStyle = '#8a7e6a';
-  const lines = [
+  const lines = Touch.active ? [
+    'Left thumb: drag to move  ·  Right thumb: ATTACK, HEAVY, ROLL, PARRY, FLASK',
+    'Hold ROLL to run  ·  Aim locks onto the nearest enemy',
+    'Orange telegraphs can be parried. Red ones must be dodged.',
+    ...(H > W ? ['Turn your phone sideways for the best view.'] : []),
+  ] : [
     'WASD move  ·  Mouse aim  ·  Shift sprint  ·  LMB light / RMB heavy',
     'Space roll  ·  Q parry  ·  R flask  ·  E interact  ·  Esc pause',
     'Orange telegraphs can be parried. Red ones must be dodged.',
@@ -454,7 +470,7 @@ function renderDeath(game, ctx) {
   ctx.font = `14px ${FONT}`; ctx.fillStyle = '#b8a890';
   ctx.fillText(`${game.floorCfg.name} — ${game.floorCfg.title}  ·  Level ${run.level}  ·  ${run.kills} slain  ·  ${fmtTime(run.time)}`, VW / 2, VH / 2 + 90);
   ctx.fillStyle = '#ffc875';
-  ctx.fillText('Press Enter to return to the foot of the spire', VW / 2, VH / 2 + 116);
+  ctx.fillText(Touch.active ? 'Tap to return to the foot of the spire' : 'Press Enter to return to the foot of the spire', VW / 2, VH / 2 + 116);
   ctx.globalAlpha = 1;
 }
 
@@ -476,6 +492,6 @@ function renderVictory(game, ctx) {
     `Time: ${fmtTime(run.time)}  ·  Relics: ${run.relics.length}`,
   ];
   lines.forEach((l, i) => ctx.fillText(l, VW / 2, VH * 0.5 + i * 24));
-  if (game.stateT > 2) { ctx.fillStyle = '#ffc875'; ctx.fillText('Press Enter to return to the title', VW / 2, VH * 0.5 + 100); }
+  if (game.stateT > 2) { ctx.fillStyle = '#ffc875'; ctx.fillText(Touch.active ? 'Tap to return to the title' : 'Press Enter to return to the title', VW / 2, VH * 0.5 + 100); }
   ctx.globalAlpha = 1;
 }

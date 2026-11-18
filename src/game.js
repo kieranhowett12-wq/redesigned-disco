@@ -8,6 +8,9 @@ const Game = {
     this.canvas = document.getElementById('game');
     this.ctx = this.canvas.getContext('2d');
     Input.init(this.canvas);
+    Touch.init(this.canvas);
+    Touch.controlsLive = () => this.state === 'play' && this.player && !this.player.dead;
+    this.touchAim = 0;
     Input.onBlur = () => { if (this.state === 'play' && !this.player.dead) this.openPause(); };
     this.resize();
     addEventListener('resize', () => this.resize());
@@ -31,6 +34,7 @@ const Game = {
     this.zoom = clamp(Math.min(this.W / 980, this.H / 600), 0.55, 2.4);
     this.viewW = this.W / this.zoom; this.viewH = this.H / this.zoom;
     this.ui = clamp(Math.min(this.W / 1280, this.H / 760), 0.62, 1.5);
+    Touch.layout(this.W, this.H);
   },
 
   loop(now) {
@@ -133,10 +137,27 @@ const Game = {
 
   // ---------------- helpers used by entities ----------------
   mouseWorld() {
+    if (Touch.active && this.player) {
+      return { x: this.player.x + Math.cos(this.touchAim) * 120, y: this.player.y + Math.sin(this.touchAim) * 120 };
+    }
     return {
       x: this.cam.x - this.viewW / 2 + Input.mouse.x / this.zoom,
       y: this.cam.y - this.viewH / 2 + Input.mouse.y / this.zoom,
     };
+  },
+
+  // Touch aim assist: lock onto the nearest awake enemy in sight, else face where you move.
+  updateTouchAim() {
+    const p = this.player, mv = Input.moveVector();
+    let best = null, bd = 300;
+    for (const e of this.enemies) {
+      if (e.dead || e.state === 'asleep' || e.airborne) continue;
+      const d = dist(p.x, p.y, e.x, e.y);
+      if (d < bd && this.map.los(p.x, p.y, e.x, e.y)) { bd = d; best = e; }
+    }
+    if (best) this.touchAim = Math.atan2(best.y - p.y, best.x - p.x);
+    else if (mv.x || mv.y) this.touchAim = Math.atan2(mv.y, mv.x);
+    this.aimTarget = best;
   },
 
   countAttackers(self) {
@@ -229,15 +250,15 @@ const Game = {
       this.fx.embers(it.x, it.y, 30, '#ffd27a');
       const choices = rollRelics(this.run, 3);
       if (!choices.length) { this.run.embers += 100; this.toast('The chest holds only embers', '+100', 2); return; }
-      openRelicMenu(this, choices);
+      Touch.reset(); openRelicMenu(this, choices);
     } else if (it.type === 'shrine') {
-      openShrineMenu(this, it);
+      Touch.reset(); openShrineMenu(this, it);
     } else if (it.type === 'stairs') {
       this.ascend();
     }
   },
 
-  openPause() { openPauseMenu(this); },
+  openPause() { Touch.reset(); openPauseMenu(this); },
 
   // ---------------- update ----------------
   update(dt) {
@@ -250,7 +271,11 @@ const Game = {
         this.titleFx.update(dt);
         if (Math.random() < 0.5) this.titleFx.embers(rand(0, this.W), this.H + 10, 1);
         for (const p of this.titleFx.particles) p.vy -= 20 * dt;
-        if (Input.hit('confirm') || Input.clicked()) { Sfx.unlock(); Sfx.play('ui'); this.newRun(); }
+        if (Input.hit('confirm') || Input.clicked()) {
+          Sfx.unlock(); Sfx.play('ui');
+          if (Touch.active) { try { const r = document.documentElement.requestFullscreen?.(); if (r && r.catch) r.catch(() => { }); } catch (e) { } }
+          this.newRun();
+        }
         break;
       case 'play': this.updatePlay(dt); break;
       case 'menu': updateMenu(this, dt); break;
@@ -273,6 +298,7 @@ const Game = {
     this.fx.update(dt);
     if (!p.dead) this.run.time += dt;
 
+    if (Touch.active) this.updateTouchAim();
     p.update(dt, this);
     for (const e of this.enemies) e.update(dt, this);
 
@@ -350,6 +376,7 @@ const Game = {
         if (d < bd) { bd = d; best = it; }
       }
       this.prompt = best;
+      Touch.showInteract = !!best;
       if (best && Input.hit('interact') && (p.state === 'idle')) this.interact(best);
     }
 
@@ -377,6 +404,9 @@ const Game = {
     this.renderWorld(ctx);
     ctx.setTransform(this.dpr * this.ui, 0, 0, this.dpr * this.ui, 0, 0);
     renderHUD(this, ctx);
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    Touch.render(ctx, this);
+    ctx.setTransform(this.dpr * this.ui, 0, 0, this.dpr * this.ui, 0, 0);
     if (this.state === 'menu') renderMenu(this, ctx);
     if (this.state === 'victory') renderVictory(this, ctx);
     if (this.player.dead) renderDeath(this, ctx);
@@ -469,14 +499,25 @@ const Game = {
 
     this.fx.renderTexts(ctx);
 
+    // touch lock-on marker
+    if (Touch.active && this.aimTarget && !this.aimTarget.dead && this.state === 'play') {
+      const e = this.aimTarget;
+      ctx.strokeStyle = 'rgba(255,220,150,0.7)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 4; i++) {
+        const a = this.time * 1.5 + i * Math.PI / 2;
+        ctx.beginPath(); ctx.arc(e.x, e.y - e.z, e.r + 7, a, a + 0.6); ctx.stroke();
+      }
+    }
+
     // interact prompt
     if (this.prompt && this.state === 'play') {
       const it = this.prompt;
       const label = { chest: 'Open chest', shrine: 'Kneel at shrine', stairs: 'Ascend the spire' }[it.type];
+      const txt = Touch.active ? `${label} — tap USE` : `[E] ${label}`;
       ctx.font = 'bold 12px Georgia, serif'; ctx.textAlign = 'center';
-      const w = ctx.measureText(`[E] ${label}`).width + 14;
+      const w = ctx.measureText(txt).width + 14;
       ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(it.x - w / 2, it.y - 46, w, 20);
-      ctx.fillStyle = '#f0e2c0'; ctx.fillText(`[E] ${label}`, it.x, it.y - 36);
+      ctx.fillStyle = '#f0e2c0'; ctx.fillText(txt, it.x, it.y - 36);
     }
   },
 };

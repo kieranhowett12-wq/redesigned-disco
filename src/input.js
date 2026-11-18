@@ -8,14 +8,14 @@ const Input = {
     down: ['KeyS', 'ArrowDown'],
     left: ['KeyA', 'ArrowLeft'],
     right: ['KeyD', 'ArrowRight'],
-    light: ['Mouse0', 'KeyJ'],
-    heavy: ['Mouse2', 'KeyK'],
-    dodge: ['Space'],
-    parry: ['KeyQ', 'KeyF'],
-    heal: ['KeyR'],
-    interact: ['KeyE'],
+    light: ['Mouse0', 'KeyJ', 'Touch_light'],
+    heavy: ['Mouse2', 'KeyK', 'Touch_heavy'],
+    dodge: ['Space', 'Touch_dodge'],
+    parry: ['KeyQ', 'KeyF', 'Touch_parry'],
+    heal: ['KeyR', 'Touch_heal'],
+    interact: ['KeyE', 'Touch_interact'],
     sprint: ['ShiftLeft', 'ShiftRight'],
-    pause: ['Escape', 'KeyP'],
+    pause: ['Escape', 'KeyP', 'Touch_pause'],
     confirm: ['Enter', 'NumpadEnter', 'KeyE', 'Space'],
     menuUp: ['KeyW', 'ArrowUp'],
     menuDown: ['KeyS', 'ArrowDown'],
@@ -39,6 +39,7 @@ const Input = {
     });
     addEventListener('mouseup', e => this.keys.delete('Mouse' + e.button));
     canvas.addEventListener('mousemove', e => {
+      if (typeof Touch !== 'undefined' && (e.movementX || e.movementY)) Touch.active = false;
       const r = canvas.getBoundingClientRect();
       this.mouse.x = e.clientX - r.left;
       this.mouse.y = e.clientY - r.top;
@@ -47,7 +48,21 @@ const Input = {
     addEventListener('blur', () => { this.keys.clear(); if (this.onBlur) this.onBlur(); });
   },
 
-  down(a) { return this.binds[a].some(c => this.keys.has(c)); },
+  down(a) {
+    if (a === 'sprint' && typeof Touch !== 'undefined' && Touch.sprinting()) return true;
+    return this.binds[a].some(c => this.keys.has(c));
+  },
+  // movement: keyboard (digital) or touch joystick (analog), length <= 1
+  moveVector() {
+    let x = 0, y = 0;
+    if (this.down('up')) y -= 1;
+    if (this.down('down')) y += 1;
+    if (this.down('left')) x -= 1;
+    if (this.down('right')) x += 1;
+    const l = Math.hypot(x, y);
+    if (l) return { x: x / l, y: y / l };
+    return typeof Touch !== 'undefined' ? Touch.vector() : { x: 0, y: 0 };
+  },
   hit(a) { return this.binds[a].some(c => this.pressed.has(c)); },
   clicked() { return this.pressed.has('Click'); },
   consume() { this.pressed.clear(); },
