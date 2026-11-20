@@ -1,0 +1,9 @@
+{
+  "name": "Disco Studio",
+  "short_name": "Disco",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#0b0d12",
+  "theme_color": "#7c5cff",
+  "icons": [{ "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

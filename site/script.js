@@ -2,16 +2,18 @@
   "use strict";
   var root = document.documentElement;
 
-  // ---- Theme toggle (remembers choice; falls back to system preference) ----
-  function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  function safeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-  var saved = safeGet("theme");
-  var prefersDark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
-  root.setAttribute("data-theme", saved || (prefersDark ? "dark" : "light"));
-  document.getElementById("theme-toggle").addEventListener("click", function () {
+  // ---- Theme toggle (initial theme is applied by theme.js in <head>) ----
+  var themeBtn = document.getElementById("theme-toggle");
+  function syncThemeLabel() {
+    var dark = root.getAttribute("data-theme") === "dark";
+    themeBtn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+  }
+  syncThemeLabel();
+  themeBtn.addEventListener("click", function () {
     var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
     root.setAttribute("data-theme", next);
-    safeSet("theme", next);
+    try { localStorage.setItem("theme", next); } catch (e) {}
+    syncThemeLabel();
   });
 
   // ---- Mobile menu ----
@@ -41,7 +43,8 @@
       });
     }, { rootMargin: "-45% 0px -50% 0px" });
     navLinks.forEach(function (a) {
-      var s = document.querySelector(a.getAttribute("href"));
+      var id = (a.getAttribute("href") || "").replace(/^#/, "");
+      var s = /^[a-z][\w-]*$/i.test(id) ? document.getElementById(id) : null;
       if (s) sectionObs.observe(s);
     });
   }
@@ -102,7 +105,7 @@
       chips.forEach(function (c) {
         var on = c === chip;
         c.classList.toggle("is-active", on);
-        c.setAttribute("aria-selected", String(on));
+        c.setAttribute("aria-pressed", String(on));
       });
       projects.forEach(function (p) {
         var show = f === "all" || p.getAttribute("data-cat") === f;
@@ -118,31 +121,56 @@
     btn.addEventListener("click", function () { form.elements.plan.value = btn.getAttribute("data-plan"); });
   });
 
-  // ---- Contact form: validation, then opens the visitor's email app ----
-  // No backend here. To use a form service (Formspree, Netlify Forms, etc.),
-  // set the form's action and remove the mailto step.
+  // ---- Contact form ----
+  // No server is involved: after validation the visitor's own email app opens
+  // with the message filled in, so there is nothing on our side to attack or
+  // spam. To switch to a form service later, see README.md (the CSP's
+  // form-action / connect-src must then allow that service's origin).
+  var CONTACT_EMAIL = "hello@example.com";
+  var LIMITS = { name: 100, email: 254, message: 2000 };
   var status = document.getElementById("form-status");
+  var EMAIL_RE = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[a-z]{2,}$/i;
+  var ALLOWED = { plan: ["Not sure yet", "Starter", "Business", "Custom"], budget: ["Under £2k", "£2k – £5k", "£5k – £10k", "£10k+"] };
+
+  // Strip control characters (incl. CR/LF) from single-line fields.
+  function clean(v, max, multiline) {
+    v = String(v || "").replace(multiline ? /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g : /[\u0000-\u001F\u007F]/g, "").trim();
+    return v.slice(0, max);
+  }
+  function pick(v, list) { return list.indexOf(v) !== -1 ? v : list[0]; }
+
+  var lastSend = 0;
   form.addEventListener("submit", function (e) {
     e.preventDefault();
-    var ok = true;
-    ["name", "email", "message"].forEach(function (n) {
-      var f = form.elements[n];
-      var valid = f.value.trim() !== "" && (n !== "email" || /^\S+@\S+\.\S+$/.test(f.value));
-      f.classList.toggle("is-invalid", !valid);
-      if (!valid) ok = false;
+    var d = form.elements;
+    var data = {
+      name: clean(d.name.value, LIMITS.name),
+      email: clean(d.email.value, LIMITS.email),
+      message: clean(d.message.value, LIMITS.message, true),
+      plan: pick(d.plan.value, ALLOWED.plan),
+      budget: pick(d.budget.value, ALLOWED.budget)
+    };
+    var checks = { name: data.name.length > 0, email: EMAIL_RE.test(data.email), message: data.message.length >= 10 };
+    var firstBad = null;
+    Object.keys(checks).forEach(function (n) {
+      d[n].classList.toggle("is-invalid", !checks[n]);
+      d[n].setAttribute("aria-invalid", String(!checks[n]));
+      if (!checks[n] && !firstBad) firstBad = d[n];
     });
-    if (!ok) {
+    if (firstBad) {
       status.className = "form__status err";
-      status.textContent = "Please fill in your name, a valid email and a few project details.";
+      status.textContent = "Please add your name, a valid email address and a few details about the project (at least 10 characters).";
+      firstBad.focus();
       return;
     }
-    var d = form.elements;
-    var body = "Name: " + d.name.value + "\nEmail: " + d.email.value + "\nPackage: " + d.plan.value +
-      "\nBudget: " + d.budget.value + "\n\n" + d.message.value;
-    window.location.href = "mailto:hello@example.com?subject=" + encodeURIComponent("New project enquiry") +
+    if (Date.now() - lastSend < 5000) return; // ignore double clicks
+    lastSend = Date.now();
+    var body = "Name: " + data.name + "\nEmail: " + data.email + "\nPackage: " + data.plan +
+      "\nBudget: " + data.budget + "\n\n" + data.message;
+    window.location.href = "mailto:" + CONTACT_EMAIL + "?subject=" + encodeURIComponent("Project enquiry from " + data.name) +
       "&body=" + encodeURIComponent(body);
     status.className = "form__status ok";
-    status.textContent = "Thanks! Your email app should open with the message ready to send.";
+    status.textContent = "Thanks. Your email app should now open with the message ready to send.";
   });
 
   document.getElementById("year").textContent = new Date().getFullYear();
