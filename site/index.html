@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Fallback policy for hosts that can't send headers. The real policy (incl. frame-ancestors) lives in _headers / vercel.json. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Disco Studio | Web Design &amp; Development</title>
+  <meta name="description" content="Disco Studio designs and builds fast, accessible websites, online stores and web apps, with fixed prices and launches in as little as two weeks.">
+  <meta name="theme-color" content="#7c5cff">
+  <meta name="color-scheme" content="light dark">
+  <link rel="canonical" href="https://www.example.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Disco Studio">
+  <meta property="og:title" content="Disco Studio | Web Design &amp; Development">
+  <meta property="og:description" content="Fast, accessible websites, online stores and web apps, with fixed prices.">
+  <meta property="og:url" content="https://www.example.com/">
+  <meta property="og:image" content="https://www.example.com/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="preload" href="assets/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/space-grotesk-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "name": "Disco Studio",
+    "url": "https://www.example.com/",
+    "email": "hello@example.com",
+    "description": "Web design and development studio building fast, accessible websites, online stores and web apps.",
+    "areaServed": "GB",
+    "priceRange": "££"
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="top">
+    <div class="container nav__inner">
+      <a class="brand" href="#top" aria-label="Disco Studio home">
+        <span class="brand__mark" aria-hidden="true">D</span>
+        <span>Disco<span class="muted">Studio</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="#services">Services</a>
+        <a href="#work">Work</a>
+        <a href="#process">Process</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="nav__actions">
+        <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode">
+          <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg>
+          <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="currentColor"/></svg>
+        </button>
+        <a class="btn btn--sm btn--primary hide-sm" href="#contact">Start a project</a>
+        <button class="icon-btn menu-btn" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero__glow" aria-hidden="true"></div>
+      <div class="container hero__inner">
+        <p class="eyebrow reveal"><span class="dot"></span> Taking on new projects for 2027</p>
+        <h1 class="hero__title reveal">
+          Websites that look sharp<br>
+          and <span class="grad" id="rotator">load fast</span>.
+        </h1>
+        <p class="hero__lead reveal">
+          We're a small studio that designs and builds marketing sites, online stores and
+          web apps. We focus on speed, accessibility and getting more visitors to get in touch or buy.
+        </p>
+        <div class="hero__cta reveal">
+          <a class="btn btn--primary" href="#contact">Book a free call <span aria-hidden="true">→</span></a>
+          <a class="btn btn--ghost" href="#work">See our work</a>
+        </div>
+        <ul class="hero__stats reveal" aria-label="Studio highlights">
+          <li><strong data-count="100">0</strong><span>Lighthouse target</span></li>
+          <li><strong data-count="2" data-suffix=" wks">0</strong><span>Typical launch</span></li>
+          <li><strong data-count="24" data-suffix="h">0</strong><span>Reply time</span></li>
+        </ul>
+      </div>
+
+      <div class="container">
+        <div class="browser reveal" aria-hidden="true">
+          <div class="browser__bar"><i></i><i></i><i></i><span>yourbrand.com</span></div>
+          <div class="browser__body">
+            <div class="mock mock--nav"></div>
+            <div class="mock-row">
+              <div class="mock-col">
+                <div class="mock mock--h"></div>
+                <div class="mock mock--h short"></div>
+                <div class="mock mock--p"></div>
+                <div class="mock mock--p"></div>
+                <div class="mock mock--btn"></div>
+              </div>
+              <div class="mock mock--img"></div>
+            </div>
+            <div class="mock-cards"><div></div><div></div><div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <section class="marquee" aria-label="Technologies we use">
+      <div class="marquee__track">
+        <span>HTML &amp; CSS</span><span>JavaScript</span><span>TypeScript</span><span>React</span><span>Next.js</span><span>Astro</span><span>Node</span><span>Shopify</span><span>WordPress</span><span>Figma</span><span>Tailwind</span><span>Accessibility</span>
+        <span aria-hidden="true">HTML &amp; CSS</span><span aria-hidden="true">JavaScript</span><span aria-hidden="true">TypeScript</span><span aria-hidden="true">React</span><span aria-hidden="true">Next.js</span><span aria-hidden="true">Astro</span><span aria-hidden="true">Node</span><span aria-hidden="true">Shopify</span><span aria-hidden="true">WordPress</span><span aria-hidden="true">Figma</span><span aria-hidden="true">Tailwind</span><span aria-hidden="true">Accessibility</span>
+      </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section class="section" id="services">
+      <div class="container">
+        <header class="section__head reveal">
+          <p class="kicker">Services</p>
+          <h2>Everything you need to launch and grow online</h2>
+        </header>
+        <div class="grid grid--3">
+          <article class="card reveal">
+            <div class="card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 5h18v14H3z M3 9h18" /></svg>
+            </div>
+            <h3>Web design</h3>
+            <p>Custom designs that fit your brand, prototyped in Figma before any code is written, so you see it first.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" /></svg>
+            </div>
+            <h3>Development</h3>
+            <p>Clean, fast code that scores well in Lighthouse, works on every screen size and stays easy to update.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 6h15l-2 9H8L6 3H3 M9 20a1 1 0 1 0 0-.01M18 20a1 1 0 1 0 0-.01" /></svg>
+            </div>
+            <h3>E-commerce</h3>
+            <p>Shopify and custom stores with checkout flows built to turn browsers into buyers.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2" /></svg>
+            </div>
+            <h3>SEO &amp; performance</h3>
+            <p>Technical SEO, Core Web Vitals tuning and analytics, so people can find you and the site keeps loading quickly.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z M9 12l2 2 4-4" /></svg>
+            </div>
+            <h3>Accessibility</h3>
+            <p>Built to WCAG 2.2 AA from the start: keyboard navigation, screen readers and readable contrast.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8 M21 3v5h-5" /></svg>
+            </div>
+            <h3>Care plans</h3>
+            <p>Hosting, updates, backups and small changes every month, so your site never goes stale.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORK -->
+    <section class="section section--alt" id="work">
+      <div class="container">
+        <header class="section__head section__head--row reveal">
+          <div>
+            <p class="kicker">Selected work</p>
+            <h2>Recent projects</h2>
+          </div>
+          <div class="filters" role="group" aria-label="Filter projects">
+            <button class="chip is-active" data-filter="all" aria-pressed="true">All</button>
+            <button class="chip" data-filter="web" aria-pressed="false">Websites</button>
+            <button class="chip" data-filter="shop" aria-pressed="false">Stores</button>
+            <button class="chip" data-filter="app" aria-pressed="false">Web apps</button>
+          </div>
+        </header>
+        <div class="grid grid--work" id="projects">
+          <article class="project reveal" data-cat="web">
+            <div class="project__thumb t1"><span>Café</span></div>
+            <div class="project__meta"><h3>Northside Coffee</h3><p>Marketing site · Astro</p></div>
+          </article>
+          <article class="project reveal" data-cat="shop">
+            <div class="project__thumb t2"><span>Shop</span></div>
+            <div class="project__meta"><h3>Loom &amp; Thread</h3><p>Online store · Shopify</p></div>
+          </article>
+          <article class="project reveal" data-cat="app">
+            <div class="project__thumb t3"><span>App</span></div>
+            <div class="project__meta"><h3>Fieldbook</h3><p>Booking dashboard · React</p></div>
+          </article>
+          <article class="project reveal" data-cat="web">
+            <div class="project__thumb t4"><span>Studio</span></div>
+            <div class="project__meta"><h3>Pulse Fitness</h3><p>Website + memberships · Next.js</p></div>
+          </article>
+          <article class="project reveal" data-cat="app">
+            <div class="project__thumb t5"><span>SaaS</span></div>
+            <div class="project__meta"><h3>Ledgerly</h3><p>Invoicing tool · TypeScript</p></div>
+          </article>
+          <article class="project reveal" data-cat="shop">
+            <div class="project__thumb t6"><span>Market</span></div>
+            <div class="project__meta"><h3>Green Basket</h3><p>Grocery store · Custom</p></div>
+          </article>
+        </div>
+        <p class="note">These are sample projects. Swap them for real case studies.</p>
+      </div>
+    </section>
+
+    <!-- PROCESS -->
+    <section class="section" id="process">
+      <div class="container">
+        <header class="section__head reveal">
+          <p class="kicker">Process</p>
+          <h2>From first call to launch in four steps</h2>
+        </header>
+        <ol class="steps">
+          <li class="step reveal"><span class="step__n">01</span><h3>Discover</h3><p>We learn about your business, your audience and what the site needs to achieve.</p></li>
+          <li class="step reveal"><span class="step__n">02</span><h3>Design</h3><p>Wireframes, then a full design you can click through. You give feedback, we revise.</p></li>
+          <li class="step reveal"><span class="step__n">03</span><h3>Build</h3><p>We develop on a private preview link you can check whenever you like.</p></li>
+          <li class="step reveal"><span class="step__n">04</span><h3>Launch</h3><p>We test, launch and show you how to edit it, then keep it in good shape.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="section section--alt" id="pricing">
+      <div class="container">
+        <header class="section__head reveal">
+          <p class="kicker">Pricing</p>
+          <h2>Clear packages with no surprise invoices</h2>
+          <p class="section__sub">Fixed prices, agreed before we start. Need something else? We'll quote it.</p>
+        </header>
+        <div class="grid grid--3 pricing">
+          <article class="plan reveal">
+            <h3>Starter</h3>
+            <p class="plan__price"><span>from</span> £1,200</p>
+            <p class="plan__desc">A one-page site or landing page that makes a strong first impression.</p>
+            <ul class="ticks">
+              <li>Single page, custom design</li>
+              <li>Mobile-first and responsive</li>
+              <li>Contact form &amp; basic SEO</li>
+              <li>1 round of revisions</li>
+            </ul>
+            <a class="btn btn--ghost btn--block" href="#contact" data-plan="Starter">Choose Starter</a>
+          </article>
+          <article class="plan plan--featured reveal">
+            <span class="badge">Most popular</span>
+            <h3>Business</h3>
+            <p class="plan__price"><span>from</span> £3,500</p>
+            <p class="plan__desc">A multi-page site with a CMS so your team can edit content.</p>
+            <ul class="ticks">
+              <li>Up to 8 pages</li>
+              <li>Easy-to-use CMS</li>
+              <li>Analytics &amp; technical SEO</li>
+              <li>Accessibility audit</li>
+              <li>3 rounds of revisions</li>
+            </ul>
+            <a class="btn btn--primary btn--block" href="#contact" data-plan="Business">Choose Business</a>
+          </article>
+          <article class="plan reveal">
+            <h3>Custom</h3>
+            <p class="plan__price">Let's talk</p>
+            <p class="plan__desc">Online stores, web apps, integrations and anything more involved.</p>
+            <ul class="ticks">
+              <li>E-commerce or web app</li>
+              <li>API &amp; third-party integrations</li>
+              <li>User accounts &amp; dashboards</li>
+              <li>Ongoing support</li>
+            </ul>
+            <a class="btn btn--ghost btn--block" href="#contact" data-plan="Custom">Get a quote</a>
+          </article>
+        </div>
+        <p class="note">Example prices shown. Set your own rates.</p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="container container--narrow">
+        <header class="section__head reveal">
+          <p class="kicker">FAQ</p>
+          <h2>Questions we get asked a lot</h2>
+        </header>
+        <div class="faq">
+          <details class="reveal"><summary>How long does a website take?</summary><p>A Starter site usually takes about 2 weeks. Business sites take 4–6 weeks, depending on how quickly content and feedback come back.</p></details>
+          <details class="reveal"><summary>Can I update the site myself?</summary><p>Yes. Business and Custom builds include a CMS and a short walkthrough so you can edit text, images and blog posts without touching code.</p></details>
+          <details class="reveal"><summary>Do you handle hosting and domains?</summary><p>We can set up hosting and domains for you, or deploy to your existing provider. Care plans cover hosting, updates and backups.</p></details>
+          <details class="reveal"><summary>What do you need from me to start?</summary><p>A short call, any brand assets you already have (logo, colours, photos) and a rough idea of the pages you need. We'll help with the rest.</p></details>
+          <details class="reveal"><summary>How does payment work?</summary><p>50% to book your slot and 50% at launch. Larger projects can be split into milestones.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section section--cta" id="contact">
+      <div class="container contact">
+        <div class="contact__copy reveal">
+          <p class="kicker">Contact</p>
+          <h2>Have a project in mind?</h2>
+          <p>Tell us a bit about it and we'll reply within one working day with next steps and a rough estimate.</p>
+          <ul class="contact__list">
+            <li><span aria-hidden="true">✉</span> <a href="mailto:hello@example.com">hello@example.com</a></li>
+            <li><span aria-hidden="true">⏱</span> Mon–Fri, 9am–5:30pm</li>
+          </ul>
+        </div>
+        <noscript><p class="form form__noscript">JavaScript is off. Email us at <a href="mailto:hello@example.com">hello@example.com</a> instead.</p></noscript>
+        <form class="form reveal" id="contact-form" novalidate autocomplete="on">
+          <div class="form__row">
+            <label>Name<input name="name" type="text" autocomplete="name" required maxlength="100" spellcheck="false"></label>
+            <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254" inputmode="email" spellcheck="false"></label>
+          </div>
+          <label>What do you need?
+            <select name="plan">
+              <option>Not sure yet</option>
+              <option>Starter</option>
+              <option>Business</option>
+              <option>Custom</option>
+            </select>
+          </label>
+          <label>Budget
+            <select name="budget">
+              <option>Under £2k</option>
+              <option>£2k – £5k</option>
+              <option>£5k – £10k</option>
+              <option>£10k+</option>
+            </select>
+          </label>
+          <label>Project details<textarea name="message" rows="5" required minlength="10" maxlength="2000" placeholder="A few lines about your business and goals"></textarea></label>
+          <p class="form__fine">By sending this, you agree to us using your details to reply to your enquiry. See our <a href="privacy.html">privacy notice</a>.</p>
+          <button class="btn btn--primary btn--block" type="submit">Send message</button>
+          <p class="form__status" id="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <a class="brand" href="#top"><span class="brand__mark" aria-hidden="true">D</span><span>Disco<span class="muted">Studio</span></span></a>
+      <p class="muted">© <span id="year">2026</span> Disco Studio. All rights reserved.</p>
+      <nav class="footer__links" aria-label="Legal">
+        <a class="muted" href="privacy.html">Privacy</a>
+        <a class="muted" href="#top">Back to top ↑</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
