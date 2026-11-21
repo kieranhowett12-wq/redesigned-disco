@@ -2,7 +2,7 @@
 const Game = {
   state: 'title',
   toasts: [],
-  meta: { runs: 0, deaths: 0, wardens: 0, best: 0 },
+  meta: { runs: 0, deaths: 0, wardens: 0, best: 0, ashes: 0, unlocks: [], weapon: 'longsword' },
 
   init() {
     this.canvas = document.getElementById('game');
@@ -23,7 +23,11 @@ const Game = {
     requestAnimationFrame(t => this.loop(t));
   },
 
-  loadMeta() { try { const m = JSON.parse(localStorage.getItem('ashenspire.meta')); if (m) Object.assign(this.meta, m); } catch (e) { } },
+  loadMeta() {
+    try { const m = JSON.parse(localStorage.getItem('ashenspire.meta')); if (m) Object.assign(this.meta, m); } catch (e) { }
+    if (!Array.isArray(this.meta.unlocks)) this.meta.unlocks = [];
+    this.meta.ashes = Number(this.meta.ashes) || 0;
+  },
   saveMeta() { try { localStorage.setItem('ashenspire.meta', JSON.stringify(this.meta)); } catch (e) { } },
 
   resize() {
@@ -54,14 +58,22 @@ const Game = {
   },
 
   // ---------------- run / floor lifecycle ----------------
-  newRun() {
+  newRun(weapon = DEFAULT_WEAPON, boon = null) {
     const seed = (Math.random() * 1e9) | 0;
     this.run = {
       seed, floor: 0, level: 1, vigor: 0, endurance: 0, strength: 0,
       embers: 0, relics: [], kills: 0, time: 0, hp: null, flasks: null, dmgDealt: 0,
+      weapon: WEAPONS[weapon] ? weapon : DEFAULT_WEAPON, boon,
+      embersEarned: 0, wardens: 0, ashesAwarded: null, phylacteryUsed: false,
     };
+    if (boon === 'b_purse') this.run.embers = 120;
+    if (boon === 'b_flask') this.run.relics.push('flask');
     this.meta.runs++; this.saveMeta();
     this.loadFloor(0);
+    if (boon === 'b_gift') {
+      const choices = rollRelics(this.run, 3);
+      if (choices.length) openRelicMenu(this, choices);
+    }
   },
 
   loadFloor(i) {
@@ -131,6 +143,7 @@ const Game = {
       this.loadFloor(next);
     } else {
       this.state = 'victory'; this.stateT = 0;
+      Meta.award(this);
       Sfx.play('victory');
     }
   },
@@ -187,6 +200,7 @@ const Game = {
     }
     if (e.isBoss) {
       this.bossDead = true;
+      this.run.wardens++;
       this.meta.wardens++; this.saveMeta();
       this.fx.stop(0.35); this.fx.addShake(20);
       Sfx.play('victory');
@@ -196,6 +210,7 @@ const Game = {
   onPlayerDeath() {
     this.deathT = 0;
     this.meta.deaths++; this.saveMeta();
+    Meta.award(this);
     Sfx.play('youdied');
   },
 
@@ -274,15 +289,22 @@ const Game = {
         if (Input.hit('confirm') || Input.clicked()) {
           Sfx.unlock(); Sfx.play('ui');
           if (Touch.active) { try { const r = document.documentElement.requestFullscreen?.(); if (r && r.catch) r.catch(() => { }); } catch (e) { } }
-          this.newRun();
+          openHubMenu(this);
         }
         break;
       case 'play': this.updatePlay(dt); break;
-      case 'menu': updateMenu(this, dt); break;
+      case 'menu':
+        if (this.menu && this.menu.hub) {
+          this.titleFx.update(dt);
+          if (Math.random() < 0.5) this.titleFx.embers(rand(0, this.W), this.H + 10, 1);
+          for (const p of this.titleFx.particles) p.vy -= 20 * dt;
+        }
+        updateMenu(this, dt);
+        break;
       case 'victory':
         this.stateT += dt;
         this.fx.update(dt);
-        if (this.stateT > 2 && (Input.hit('confirm') || Input.clicked())) this.state = 'title';
+        if (this.stateT > 2 && (Input.hit('confirm') || Input.clicked())) openHubMenu(this);
         break;
     }
   },
@@ -291,7 +313,7 @@ const Game = {
     const p = this.player;
     if (p.dead) {
       this.deathT += dt;
-      if (this.deathT > 2.6 && (Input.hit('confirm') || Input.clicked())) { this.state = 'title'; return; }
+      if (this.deathT > 2.6 && (Input.hit('confirm') || Input.clicked())) { openHubMenu(this); return; }
     } else if (Input.hit('pause')) { this.openPause(); return; }
 
     if (this.fx.hitstop > 0) { this.fx.hitstop -= dt; this.fx.shake = Math.max(0, this.fx.shake - dt * 20); return; }
@@ -348,6 +370,7 @@ const Game = {
       if (d < p.r + 6 && o.t > 0.3) {
         o.dead = true;
         this.run.embers += o.value * p.mods.emberGain;
+        this.run.embersEarned += o.value * p.mods.emberGain;
         Sfx.play('pickup');
       }
     }
@@ -399,6 +422,12 @@ const Game = {
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (this.state === 'title') { renderTitle(this, ctx); return; }
+    if (this.state === 'menu' && this.menu && this.menu.hub) {
+      renderTitle(this, ctx, true);
+      ctx.setTransform(this.dpr * this.ui, 0, 0, this.dpr * this.ui, 0, 0);
+      renderMenu(this, ctx);
+      return;
+    }
     if (!this.map) return;
 
     this.renderWorld(ctx);

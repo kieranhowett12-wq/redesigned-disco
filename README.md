@@ -41,6 +41,22 @@ Touch controls appear automatically. Landscape works best.
 - **Flasks**: 3 per floor, each heals 42%. They refill at the shrine (once per floor) and when you climb to the next floor.
 - **Death is permanent.** Each run gets a new seed and a new layout.
 
+## Between runs: the Foot of the Spire
+
+When a run ends (death, victory or abandoning it), **40% of the embers you earned turn to ashes**, plus 150 for every Warden you killed. Ashes are permanent. Spend them at **the Ashen Smith** in the hub:
+
+| Unlock | Cost | What it adds |
+|---|---|---|
+| Gaolbreaker Greatsword | 120 | Slow, poise-shattering swings; the heavy has hyper-armour |
+| Twin Fangs | 120 | Fast 4-hit flurry, spinning heavy, +70% from behind, cheaper rolls |
+| Warden's Pike | 120 | Long-reach thrusts, wide sweeping heavy |
+| Forbidden Reliquary | 200 | 5 new relics in chests: Echoing Bell, Serrated Edge, Wind Sigil, Pact of Ash (cursed), Ember Phylactery |
+| Ember Purse | 100 | Boon: start with 120 embers |
+| Spare Flask | 140 | Boon: start with the Spare Flask relic |
+| Pilgrim's Gift | 180 | Boon: pick a relic before the first room |
+
+Unlocks add options, not raw power. Before each climb you choose a weapon and at most one boon.
+
 ## A floor
 
 - Rooms seal behind you (fog gates) until every enemy inside is dead.
@@ -61,9 +77,11 @@ src/fx.js         particles, damage numbers, decals, shake, hit-stop
 src/floors.js     THE TOWER: one config object per floor
 src/dungeon.js    tile map, collision, LOS, procedural generator, map pre-render
 src/relics.js     relic definitions + stat modifier aggregation
+src/weapons.js    weapon movesets (data-driven attacks, looks, passive mods)
 src/player.js     player moveset/state machine
 src/enemies.js    data-driven enemy + boss definitions, AI, projectiles, shockwaves
 src/ui.js         HUD, minimap, menus (shrine / relic / pause), title/death/victory screens
+src/meta.js       ashes, permanent unlocks, hub / smith / weapon / boon menus
 src/game.js       main loop, floor loading, rooms/doors, world update + render
 ```
 

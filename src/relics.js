@@ -15,6 +15,12 @@ const RELICS = [
   { id: 'ironlung', name: 'Iron Lungs', desc: '+25 max stamina.', color: '#8fbf6a', apply: m => { m.stamina += 25; } },
   { id: 'draught', name: 'Potent Draught', desc: 'Flasks heal 35% more.', color: '#f2c14e', apply: m => { m.healPower *= 1.35; } },
   { id: 'grip', name: "Executioner's Grip", desc: 'Heavy attacks deal +30% damage and +50% poise damage.', color: '#b07050', apply: m => { m.heavyDmg *= 1.3; m.heavyPoise *= 1.5; } },
+  // ---- Forbidden Reliquary (unlocked at the Ashen Smith) ----
+  { id: 'bell', requires: 'reliquary', name: 'Echoing Bell', desc: 'A successful parry releases a shockwave that hurts nearby enemies.', color: '#f0e0a0', apply: m => { m.parryWave = true; } },
+  { id: 'serrated', requires: 'reliquary', name: 'Serrated Edge', desc: 'Hits make enemies bleed for 15 damage over 3 seconds.', color: '#d0304a', apply: m => { m.bleed = true; } },
+  { id: 'sigil', requires: 'reliquary', name: 'Wind Sigil', desc: 'Attacks within 0.6 s of finishing a roll deal +40% damage.', color: '#a8e0d0', apply: m => { m.rollStrike = true; } },
+  { id: 'pact', requires: 'reliquary', name: 'Pact of Ash', desc: 'Cursed: +50% damage, but flasks heal 40% less.', color: '#7a5a8a', apply: m => { m.dmg *= 1.5; m.healPower *= 0.6; } },
+  { id: 'phylactery', requires: 'reliquary', name: 'Ember Phylactery', desc: 'Once per climb, survive a killing blow with 1 HP.', color: '#ff8a4a', apply: m => { m.phylactery = true; } },
 ];
 
 function computeMods(run) {
@@ -22,7 +28,10 @@ function computeMods(run) {
     dmg: 1, maxHp: 0, stamina: 0, dodgeCost: 1, lifesteal: 0, parryWindow: 1, riposte: 1,
     dmgTaken: 1, speed: 1, staminaRegen: 1, flasks: 0, dodgeDist: 1, iframes: 1,
     emberGain: 1, vengeance: false, healPower: 1, heavyDmg: 1, heavyPoise: 1,
+    parryWave: false, bleed: false, rollStrike: false, phylactery: false,
   };
+  const w = WEAPONS[run.weapon] || WEAPONS[DEFAULT_WEAPON];
+  if (w.mods) w.mods(m);
   for (const id of run.relics) {
     const r = RELICS.find(x => x.id === id);
     if (r) r.apply(m);
@@ -31,7 +40,8 @@ function computeMods(run) {
 }
 
 function rollRelics(run, n = 3) {
-  const avail = RELICS.filter(r => !run.relics.includes(r.id));
+  const unlocked = (typeof Game !== 'undefined' && Game.meta && Game.meta.unlocks) || [];
+  const avail = RELICS.filter(r => !run.relics.includes(r.id) && (!r.requires || unlocked.includes(r.requires)));
   const out = [];
   while (out.length < n && avail.length) out.push(avail.splice(Math.floor(Math.random() * avail.length), 1)[0]);
   return out;

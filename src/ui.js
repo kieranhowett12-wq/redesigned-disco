@@ -231,7 +231,7 @@ function openMenu(game, menu) {
   game.menu.sel = Math.max(0, game.menu.items.findIndex(i => i.enabled !== false));
   game.state = 'menu';
 }
-function closeMenu(game) { game.menu = null; game.state = 'play'; }
+function closeMenu(game) { const to = (game.menu && game.menu.returnTo) || 'play'; game.menu = null; game.state = to; }
 
 function openShrineMenu(game, shrine) {
   const p = game.player, run = game.run;
@@ -290,21 +290,43 @@ function openRelicMenu(game, choices) {
 function openPauseMenu(game) {
   openMenu(game, {
     title: 'Paused',
-    subtitle: `${game.floorCfg.name} — ${game.floorCfg.title}  ·  seed ${game.run.seed}`,
+    subtitle: `${game.floorCfg.name} — ${game.floorCfg.title}  ·  ${game.player.weapon.short}  ·  seed ${game.run.seed}`,
     pause: true,
     items: [
       { label: 'Resume', action: () => closeMenu(game) },
-      { label: 'Abandon run', sub: 'Return to the title screen', action: () => { game.menu = null; game.state = 'title'; } },
+      { label: 'Abandon run', sub: 'Your embers still turn to ash. Return to the foot of the spire.', action: () => { Meta.award(game); openHubMenu(game); } },
     ],
   });
+}
+
+function wrapText(ctx, text, maxW) {
+  const words = text.split(' '), lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+  }
+  if (cur) lines.push(cur);
+  return lines;
 }
 
 function menuLayout(game) {
   const VW = game.W / game.ui, VH = game.H / game.ui;
   const m = game.menu;
-  const w = 520, ih = 50;
+  const w = Math.min(600, VW - 32);
+  if (!m._wrapped) {
+    const ctx = game.ctx;
+    ctx.save(); ctx.font = `12px ${FONT}`;
+    for (const it of m.items) {
+      const tw = w - (it.color ? 66 : 40) - (it.right ? 110 : 50);
+      it._lines = it.sub ? wrapText(ctx, it.sub, tw).slice(0, 2) : [];
+    }
+    ctx.restore();
+    m._wrapped = true;
+  }
+  const ih = m.items.some(it => it._lines.length > 1) ? 62 : 50;
   const h = 110 + m.items.length * ih;
-  const x = (VW - w) / 2, y = Math.max(20, (VH - h) / 2);
+  const x = (VW - w) / 2, y = Math.max(10, (VH - h) / 2);
   return { VW, VH, w, h, x, y, ih, itemY: i => y + 92 + i * ih };
 }
 
@@ -338,7 +360,10 @@ function updateMenu(game, dt) {
     if (it && it.enabled !== false) activate(game, it);
     return;
   }
-  if ((Input.hit('back') || (m.pause && Input.hit('pause'))) && m.closable) closeMenu(game);
+  if (Input.hit('back') || (m.pause && Input.hit('pause'))) {
+    if (m.onBack) { Sfx.play('ui'); m.onBack(); }
+    else if (m.closable) closeMenu(game);
+  }
 }
 
 function activate(game, it) { Sfx.play('ui'); it.action && it.action(); }
@@ -371,8 +396,11 @@ function renderMenu(game, ctx) {
     ctx.font = `17px ${FONT}`;
     ctx.fillStyle = en ? (sel ? '#fff0d0' : '#d8c8a8') : '#6a6058';
     ctx.fillText(it.label, tx, iy + 20);
-    if (it.sub) { ctx.font = `12px ${FONT}`; ctx.fillStyle = en ? '#a09078' : '#5a5048'; ctx.fillText(it.sub, tx, iy + 37); }
-    ctx.textAlign = 'right'; ctx.font = `11px ${FONT}`; ctx.fillStyle = '#6a6058';
+    ctx.font = `12px ${FONT}`; ctx.fillStyle = en ? '#a09078' : '#5a5048';
+    (it._lines || []).forEach((l, k) => ctx.fillText(l, tx, iy + 37 + k * 14));
+    ctx.textAlign = 'right';
+    if (it.right) { ctx.font = `13px ${FONT}`; ctx.fillStyle = en ? '#ffc875' : '#6a6058'; ctx.fillText(it.right, L.x + L.w - 50, iy + 20); }
+    ctx.font = `11px ${FONT}`; ctx.fillStyle = '#6a6058';
     if (i < 9) ctx.fillText(String(i + 1), L.x + L.w - 32, iy + 20);
   });
   if (m.pause) {
@@ -403,7 +431,7 @@ function renderMenu(game, ctx) {
 }
 
 // ---------- Screens ----------
-function renderTitle(game, ctx) {
+function renderTitle(game, ctx, bare = false) {
   ctx.setTransform(game.dpr, 0, 0, game.dpr, 0, 0);
   const W = game.W, H = game.H;
   const g = ctx.createRadialGradient(W / 2, H * 0.6, 0, W / 2, H * 0.6, H);
@@ -422,6 +450,7 @@ function renderTitle(game, ctx) {
     ctx.fillRect(cx - 4 + ((i % 2) ? 22 : -22), wy, 6, 10);
   }
   game.titleFx.renderParticles(ctx);
+  if (bare) return;
 
   const s = game.ui;
   ctx.textAlign = 'center';
@@ -451,7 +480,7 @@ function renderTitle(game, ctx) {
   lines.forEach((l, i) => ctx.fillText(l, W / 2, H * 0.72 + i * 22 * s));
   const m = game.meta;
   ctx.fillStyle = '#5e5448';
-  ctx.fillText(`Climbs ${m.runs}  ·  Deaths ${m.deaths}  ·  Wardens felled ${m.wardens}`, W / 2, H - 28 * s);
+  ctx.fillText(`Climbs ${m.runs}  ·  Deaths ${m.deaths}  ·  Wardens felled ${m.wardens}  ·  ${m.ashes} ashes`, W / 2, H - 28 * s);
 }
 
 function renderDeath(game, ctx) {
@@ -469,8 +498,10 @@ function renderDeath(game, ctx) {
   const run = game.run;
   ctx.font = `14px ${FONT}`; ctx.fillStyle = '#b8a890';
   ctx.fillText(`${game.floorCfg.name} — ${game.floorCfg.title}  ·  Level ${run.level}  ·  ${run.kills} slain  ·  ${fmtTime(run.time)}`, VW / 2, VH / 2 + 90);
+  ctx.fillStyle = '#d8b088';
+  ctx.fillText(`Your embers turn to ash  ·  +${run.ashesAwarded || 0} ashes`, VW / 2, VH / 2 + 114);
   ctx.fillStyle = '#ffc875';
-  ctx.fillText(Touch.active ? 'Tap to return to the foot of the spire' : 'Press Enter to return to the foot of the spire', VW / 2, VH / 2 + 116);
+  ctx.fillText(Touch.active ? 'Tap to return to the foot of the spire' : 'Press Enter to return to the foot of the spire', VW / 2, VH / 2 + 140);
   ctx.globalAlpha = 1;
 }
 
@@ -489,9 +520,10 @@ function renderVictory(game, ctx) {
   const lines = [
     `Floors cleared: ${run.floor + 1}`,
     `Level ${run.level}  ·  ${run.kills} slain  ·  ${Math.round(run.dmgDealt)} damage dealt`,
-    `Time: ${fmtTime(run.time)}  ·  Relics: ${run.relics.length}`,
+    `Time: ${fmtTime(run.time)}  ·  Relics: ${run.relics.length}  ·  ${WEAPONS[run.weapon].name}`,
+    `+${run.ashesAwarded || 0} ashes`,
   ];
   lines.forEach((l, i) => ctx.fillText(l, VW / 2, VH * 0.5 + i * 24));
-  if (game.stateT > 2) { ctx.fillStyle = '#ffc875'; ctx.fillText(Touch.active ? 'Tap to return to the title' : 'Press Enter to return to the title', VW / 2, VH * 0.5 + 100); }
+  if (game.stateT > 2) { ctx.fillStyle = '#ffc875'; ctx.fillText(Touch.active ? 'Tap to return to the foot of the spire' : 'Press Enter to return to the foot of the spire', VW / 2, VH * 0.5 + 124); }
   ctx.globalAlpha = 1;
 }

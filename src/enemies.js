@@ -113,6 +113,7 @@ class Enemy {
     this.sinceHit += dt;
     if (this.sinceHit > 2.5) this.poise = Math.min(this.def.poise, this.poise + this.def.poise * 0.5 * dt);
     if (this.hpShown > this.hp) this.hpShown = Math.max(this.hp, this.hpShown - this.maxHp * 0.6 * dt);
+    if (this.tickBleed(dt, game)) return;
 
     switch (this.state) {
       case 'asleep': break;
@@ -140,6 +141,17 @@ class Enemy {
       const fr = Math.exp(-9 * dt); this.vx *= fr; this.vy *= fr;
       this.hitWall = game.map.collideCircle(this);
     }
+  }
+
+  // Serrated Edge relic: 5 dmg/s for 3 s. Returns true if the bleed killed us.
+  tickBleed(dt, game) {
+    if (!this.bleed || this.bleed <= 0) return false;
+    this.bleed -= dt;
+    this.hp -= 5 * dt;
+    game.run.dmgDealt += 5 * dt;
+    if (Math.random() < 0.25) game.fx.burst(this.x, this.y, 1, '#b0182a', 40, 0.4, 2);
+    if (this.hp <= 0) { this.hp = 0; this.die(game); return true; }
+    return false;
   }
 
   chainChance(a) { return this.phase === 2 ? Math.min(1, a.nextChance + 0.25) : a.nextChance; }
@@ -319,9 +331,9 @@ class Enemy {
       inside = d <= this.r + p.r + 4;
     }
     if (!inside) return;
-    const res = p.receiveHit({ dmg: a.dmg * this.dmgMult, x: this.x, y: this.y, parryable: !!a.parryable, knock: a.knock || 200 }, game);
+    const res = p.receiveHit({ dmg: a.dmg * this.dmgMult, x: this.x, y: this.y, parryable: !!a.parryable, knock: a.knock || 200, src: this }, game);
     if (res === 'hit') this.hasHit = true;
-    else if (res === 'parried') { this.hasHit = true; this.getParried(game); }
+    else if (res === 'parried') { this.hasHit = true; if (!this.dead) this.getParried(game); }
   }
 
   getParried(game) {
@@ -588,6 +600,7 @@ class Boss extends Enemy {
       Sfx.play('roar');
     }
     if (this.state === 'roar') {
+      if (this.tickBleed(dt, game)) return;
       this.t += dt;
       this.decay(dt, 8);
       if (this.hpShown > this.hp) this.hpShown = Math.max(this.hp, this.hpShown - this.maxHp * 0.6 * dt);

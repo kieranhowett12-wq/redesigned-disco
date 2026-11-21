@@ -1,12 +1,7 @@
 // ---------- Player: souls-like moveset ----------
 // Every action has commitment: windup -> active -> recovery. Inputs are buffered
 // briefly so a press during recovery fires as soon as it's allowed.
-const PLAYER_ATTACKS = {
-  light1: { windup: 0.13, active: 0.1, recover: 0.28, dmg: 16, poise: 10, reach: 52, arc: 1.9, stamina: 16, lunge: 110, next: 'light2', dir: 1 },
-  light2: { windup: 0.11, active: 0.1, recover: 0.3, dmg: 16, poise: 10, reach: 52, arc: 1.9, stamina: 16, lunge: 110, next: 'light3', dir: -1 },
-  light3: { windup: 0.22, active: 0.12, recover: 0.46, dmg: 26, poise: 20, reach: 58, arc: 2.5, stamina: 22, lunge: 170, next: null, dir: 1 },
-  heavy: { windup: 0.48, active: 0.13, recover: 0.5, dmg: 42, poise: 38, reach: 66, arc: 2.6, stamina: 32, lunge: 190, next: null, dir: 1, heavy: true },
-};
+// Attack data lives with each weapon in weapons.js (WEAPONS[id].attacks).
 
 const BASE = {
   hp: 100, stamina: 100, speed: 148, staminaRegen: 52, flasks: 3, healPct: 0.42,
@@ -34,6 +29,8 @@ class Player {
     this.sprinting = false;
     this.afterimages = [];
     this.dead = false;
+    this.rollBuff = 0;
+    this.weapon = WEAPONS[run.weapon] || WEAPONS[DEFAULT_WEAPON];
     this.recompute();
     this.hp = run.hp != null ? Math.min(run.hp, this.maxHp) : this.maxHp;
     this.hpTrail = this.hp;
@@ -78,6 +75,7 @@ class Player {
   update(dt, game) {
     this.t += dt;
     this.invuln = Math.max(0, this.invuln - dt);
+    this.rollBuff = Math.max(0, this.rollBuff - dt);
     if (this.hpTrail > this.hp) this.hpTrail = Math.max(this.hp, this.hpTrail - dt * (this.invuln > 0 ? 0 : 60));
     else this.hpTrail = this.hp;
 
@@ -156,7 +154,7 @@ class Player {
           this.vx = Math.cos(this.dodgeDir) * sp; this.vy = Math.sin(this.dodgeDir) * sp;
           if (Math.random() < 0.5) this.afterimages.push({ x: this.x, y: this.y, life: 0.25 });
         } else { this.vx *= 0.6; this.vy *= 0.6; }
-        if (this.t >= BASE.dodgeDur) this.setState('idle');
+        if (this.t >= BASE.dodgeDur) { this.setState('idle'); this.rollBuff = 0.6; }
         break;
       }
       case 'parry': {
@@ -234,7 +232,7 @@ class Player {
   }
 
   startAttack(name) {
-    const a = PLAYER_ATTACKS[name];
+    const a = this.weapon.attacks[name];
     this.atk = a; this.atkName = name;
     this.atkAngle = this.aim;
     this.hitSet.clear();
@@ -256,7 +254,14 @@ class Player {
       let dmg = a.dmg * this.dmgMult, poise = a.poise;
       if (a.heavy) { dmg *= this.mods.heavyDmg; poise *= this.mods.heavyPoise; }
       if (this.vengeanceReady) { dmg *= 1.6; this.vengeanceReady = false; }
+      if (this.mods.rollStrike && this.rollBuff > 0) dmg *= 1.4;
+      if (this.weapon.backstab && e.state !== 'riposte') {
+        // behind = the enemy is facing away from us
+        const behind = Math.abs(angleDiff(e.facing, Math.atan2(this.y - e.y, this.x - e.x))) > 2.0;
+        if (behind) { dmg *= this.weapon.backstab; game.fx.text(e.x, e.y - e.r - 26, 'BACKSTAB', '#d0b0ff', 12); }
+      }
       const res = e.takeHit(dmg, poise, this, game, a.heavy);
+      if (this.mods.bleed && !e.dead) { e.bleed = 3; game.fx.burst(e.x, e.y, 4, '#d0304a', 80, 0.4, 2); }
       this.run.dmgDealt += res.dmg;
       if (this.mods.lifesteal) this.hp = Math.min(this.maxHp, this.hp + this.mods.lifesteal);
       game.fx.stop(res.crit ? 0.16 : a.heavy ? 0.09 : 0.055);
@@ -279,20 +284,39 @@ class Player {
       game.fx.text(this.x, this.y - 26, 'PARRY', '#ffe28a', 16);
       game.fx.stop(0.14); game.fx.addShake(6);
       Sfx.play('parry');
+      if (this.mods.parryWave) {
+        game.fx.burst(this.x, this.y, 30, '#f0e0a0', 320, 0.35, 3);
+        for (const e of game.enemies) {
+          if (e.dead || e === h.src || e.state === 'asleep' || e.airborne) continue;
+          if (dist(this.x, this.y, e.x, e.y) < 130 + e.r) e.takeHit(22 * this.dmgMult, 25, this, game, false);
+        }
+      }
       return 'parried';
     }
     const dmg = Math.round(h.dmg * this.mods.dmgTaken);
     this.hp -= dmg;
     this.invuln = 0.4;
     const ang = Math.atan2(this.y - h.y, this.x - h.x);
-    this.vx = Math.cos(ang) * (h.knock || 200);
-    this.vy = Math.sin(ang) * (h.knock || 200);
+    // hyper-armour (greatsword heavy): take the damage but keep swinging
+    const endure = this.state === 'attack' && this.atk.hyper && this.phase() !== 'recover';
+    if (!endure) {
+      this.vx = Math.cos(ang) * (h.knock || 200);
+      this.vy = Math.sin(ang) * (h.knock || 200);
+    }
     game.fx.burst(this.x, this.y, 14, '#b0182a', 180, 0.5, 3, ang, 1.4);
     game.fx.decal(this.x + rand(-6, 6), this.y + rand(-6, 6), rand(4, 9), 'rgba(110,10,20,0.45)');
     game.fx.text(this.x, this.y - 22, String(dmg), '#ff5050', 15);
     game.fx.flash = 0.6; game.fx.addShake(7); game.fx.stop(0.07);
     Sfx.play('hurt');
     if (this.mods.vengeance) this.vengeanceReady = true;
+    if (this.hp <= 0 && this.mods.phylactery && !this.run.phylacteryUsed) {
+      this.run.phylacteryUsed = true;
+      this.hp = 1; this.invuln = 1.5;
+      game.fx.embers(this.x, this.y, 40, '#ff8a4a');
+      game.fx.text(this.x, this.y - 40, 'THE PHYLACTERY SHATTERS', '#ff9a5a', 14, 1.6);
+      Sfx.play('parry');
+    }
+    if (endure && this.hp > 0) return 'hit';
     this.buffer = null;
     if (this.hp <= 0) {
       this.hp = 0; this.state = 'dead'; this.t = 0; this.dead = true;
@@ -307,12 +331,54 @@ class Player {
     const base = this.facing;
     if (this.state === 'attack') {
       const a = this.atk, s = a.dir, half = a.arc / 2;
+      if (a.thrust) {
+        if (this.t < a.windup + a.active) return base;
+        return base + lerp(0, 0.9, easeInOut(clamp((this.t - a.windup - a.active) / a.recover, 0, 1)));
+      }
       if (this.t < a.windup) return base - s * (half + 0.35) * easeOut(this.t / a.windup);
       if (this.t < a.windup + a.active) return base + s * lerp(-half - 0.35, half, easeOut((this.t - a.windup) / a.active));
       return base + s * lerp(half, 0.9 * s, easeInOut(clamp((this.t - a.windup - a.active) / a.recover, 0, 1)));
     }
     if (this.state === 'parry') return base - 0.4;
     return base + 0.9;
+  }
+
+  renderWeapon(ctx) {
+    const W = this.weapon, look = W.look;
+    const wa = this.weaponAngle();
+    let len = this.state === 'attack' ? look.len : look.idle;
+    let back = 8; // where the grip sits from the body centre
+    if (this.state === 'attack' && this.atk.thrust) {
+      const a = this.atk;
+      if (this.t < a.windup) back = 8 - 10 * easeOut(this.t / a.windup);       // draw back
+      else if (this.t < a.windup + a.active) back = lerp(-2, a.reach - len - 4, easeOut((this.t - a.windup) / a.active)); // stab
+      else back = lerp(a.reach - len - 4, 8, easeInOut(clamp((this.t - a.windup - a.active) / a.recover, 0, 1)));
+    }
+    const cx = Math.cos(wa), cy = Math.sin(wa), px = -cy, py = cx;
+    const sx = this.x + cx * back, sy = this.y + cy * back;
+    const ex = sx + cx * len, ey = sy + cy * len;
+    ctx.lineCap = 'round';
+    if (look.kind === 'spear') {
+      ctx.strokeStyle = '#6a4e30'; ctx.lineWidth = look.width;
+      ctx.beginPath(); ctx.moveTo(sx - cx * 10, sy - cy * 10); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.fillStyle = W.color;
+      ctx.beginPath(); ctx.moveTo(ex + cx * 12, ey + cy * 12); ctx.lineTo(ex + px * 4, ey + py * 4); ctx.lineTo(ex - px * 4, ey - py * 4); ctx.fill();
+      return;
+    }
+    const blade = (bx, by, ang, l, w) => {
+      const c = Math.cos(ang), s2 = Math.sin(ang);
+      ctx.strokeStyle = W.color; ctx.lineWidth = w;
+      ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + c * l, by + s2 * l); ctx.stroke();
+      ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = w + 1;
+      const gx = -s2, gy = c, g = w + 2;
+      ctx.beginPath(); ctx.moveTo(bx + gx * g, by + gy * g); ctx.lineTo(bx - gx * g, by - gy * g); ctx.stroke();
+    };
+    blade(sx, sy, wa, len, look.width);
+    if (look.kind === 'daggers') {
+      // off-hand fang held on the other side
+      const oa = this.facing - 0.9;
+      blade(this.x + Math.cos(oa) * 8, this.y + Math.sin(oa) * 8, oa, look.idle, look.width);
+    }
   }
 
   render(ctx, game) {
@@ -342,17 +408,7 @@ class Player {
       ctx.closePath(); ctx.fill();
     }
 
-    // sword
-    const wa = this.weaponAngle();
-    const sx = this.x + Math.cos(wa) * 8, sy = this.y + Math.sin(wa) * 8;
-    const len = this.state === 'attack' ? (this.atk.heavy ? 40 : 34) : 26;
-    ctx.strokeStyle = '#dfe3ea'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(wa) * len, sy + Math.sin(wa) * len); ctx.stroke();
-    ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(sx + Math.cos(wa + Math.PI / 2) * 5, sy + Math.sin(wa + Math.PI / 2) * 5);
-    ctx.lineTo(sx - Math.cos(wa + Math.PI / 2) * 5, sy - Math.sin(wa + Math.PI / 2) * 5);
-    ctx.stroke();
+    this.renderWeapon(ctx);
 
     // body: cloak + armour
     ctx.fillStyle = '#2c3442';

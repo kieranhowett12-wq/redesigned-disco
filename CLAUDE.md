@@ -6,6 +6,8 @@
   - Floors are data in `src/floors.js` (`FLOORS` array). Never hard-code floor-specific behaviour in the game loop.
   - The run state (`Game.run`: level, stats, embers, relics, hp, flasks) persists across floors; `Game.ascend()` moves to `FLOORS[run.floor + 1]` or shows the "spire climbs on" screen when none exists.
   - Difficulty should scale per floor (`hpMult`, `dmgMult`, enemy pools, new enemy types, a unique boss per floor).
+- **Meta-progression** (`src/meta.js`): ashes persist in `localStorage` (`Game.meta`). Unlocks must widen options (weapons, relic pool, boons), not add flat power.
+- **Weapons** (`src/weapons.js`): each is a data-driven moveset; new weapons need only a `WEAPONS` entry plus an unlock in `UNLOCKS`.
 - Ideas for later floors: new biomes/palettes, new enemy archetypes, floor-specific hazards, more relics, meta-progression between runs.
 
 ## Tech
